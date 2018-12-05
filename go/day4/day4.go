@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -46,7 +47,7 @@ func parseLogEvent(log string) string {
 	return match[1]
 }
 
-func parseClaims(file string) []Log {
+func parseLogs(file string) []Log {
 	logs := []Log{}
 	rawLogs, _ := ioutil.ReadFile(file)
 	arr := strings.Split(string(rawLogs), "\n")
@@ -61,15 +62,97 @@ func parseClaims(file string) []Log {
 			logs = append(logs, log)
 		}
 	}
+
+	sort.Slice(logs, func(i, j int) bool {
+		return logs[i].Date.Before(logs[j].Date)
+	})
 	return logs
+}
+
+func sleepTimes(logs []Log) map[int]map[int]int {
+	sleep := map[int]map[int]int{}
+	guard := -1
+	startTime := time.Now()
+	for _, log := range logs {
+		switch event := log.Event; event {
+		case "shift":
+			guard = log.ID
+		case "sleep":
+			startTime = log.Date
+		case "wake":
+			if sleep[guard] == nil {
+				sleep[guard] = map[int]int{}
+			}
+			for i := startTime.Minute(); i < log.Date.Minute(); i++ {
+				sleep[guard][i]++
+			}
+		}
+		// fmt.Println(log)
+	}
+	return sleep
+}
+
+func countDurations(durations []time.Duration) time.Duration {
+	var total time.Duration
+	for _, dur := range durations {
+		total = total + dur
+	}
+	return total
+}
+
+func longestSleeper(sleep map[int]map[int]int) (int, int, int) {
+	max := 0
+	guard := 0
+	mode := 0
+	for id, records := range sleep {
+		minutes := 0
+		maxFreq := 0
+		localMode := 0
+		for minute, freq := range records {
+			if freq > maxFreq {
+				maxFreq = freq
+				localMode = minute
+			}
+			minutes += freq
+		}
+		if minutes > max {
+			max = minutes
+			guard = id
+			mode = localMode
+		}
+	}
+	return guard, max, mode
+}
+
+func maxMinute(sleep map[int]map[int]int) (int, int) {
+	minute := 0
+	guard := 0
+	max := 0
+	for id, records := range sleep {
+		for min, freq := range records {
+			if freq > max {
+				guard = id
+				minute = min
+				max = freq
+			}
+		}
+	}
+
+	return guard, minute
 }
 
 // Solve the puzzle for day 3
 func Solve() {
-	logs := parseClaims("./day4/test")
+	logs := parseLogs("./day4/logs")
+	sleep := sleepTimes(logs)
 
-	// for _, log := range logs {
-	// }
+	guard, max, mode := longestSleeper(sleep)
+	fmt.Printf("guard: %d, max: %d, mode: %d", guard, max, mode)
+	fmt.Printf("\nGuard * Mode: %d", guard*mode)
 
-	fmt.Printf("Total: %d", len(logs))
+	gd, maxMin := maxMinute(sleep)
+	fmt.Printf("\nGuard: %d, minute: %d", gd, maxMin)
+	fmt.Printf("\nGuard * Minute: %d", gd*maxMin)
+
+	fmt.Printf("\nTotal: %d", len(logs))
 }

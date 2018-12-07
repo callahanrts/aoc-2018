@@ -76,10 +76,8 @@ func equal(x, y []string) bool {
 	return false
 }
 
-// Solve - solve it
-func Solve() {
+func stepOrder(prereq map[string][]string) []string {
 	// Part One
-	_, prereq := parseSteps("./day7/steps")
 	has := []string{}
 
 	S := []string{}
@@ -87,7 +85,7 @@ func Solve() {
 		S = append(S, string(toChar(i)))
 	}
 
-	for i := 0; i < 101; i++ {
+	for i := 0; i <= len(prereq); i++ {
 		for _, j := range S {
 			scheduled := stringInSlice(j, has)
 			if !scheduled && equal(intersection(prereq[j], has), prereq[j]) {
@@ -97,6 +95,75 @@ func Solve() {
 			}
 		}
 	}
+  fmt.Printf("\n")
+  return has
+}
 
-	// Part Two
+func available(step string, done[]string, prereq map[string][]string) bool {
+  avail := true
+  for _, dep := range prereq[step] {
+    avail = avail && !stringInSlice(dep, done)
+  }
+  return avail
+}
+
+func stepTime (step string) int {
+  return int([]rune(step)[0]) - 64
+}
+
+func consume (workers [2][]string, step string) ([2][]string, bool) {
+  // For each worker
+  for w := 0; w < 2; w++ {
+    if len(workers[w]) == 0 {
+      for j := 0; j < stepTime(step); j++ {
+        workers[w] = append(workers[w], step)
+        return workers, true
+      }
+    }
+  }
+
+  return workers, false
+}
+
+func work (workers [2][]string) [2][]string {
+  for w := 0; w < 2; w++ {
+    if len(workers[w]) > 0 {
+      workers[w] = workers[w][1:]
+    }
+  }
+
+  return workers
+}
+
+
+// Solve - solve it
+func Solve() {
+	_, prereq := parseSteps("./day7/test")
+  steps := stepOrder(prereq)
+  done := []string{}
+
+  workers := [2][]string{}
+
+  t := 0
+  for len(steps) > 0 {
+    // If the next step is available
+    if available(steps[0], done, prereq) {
+
+      // Consume the next task if possible
+      var consumed bool
+      workers, consumed = consume(workers, steps[0])
+      if consumed {
+        fmt.Print(consumed)
+        done = append(done, steps[0])
+        steps = steps[1:]
+      }
+
+    }
+
+    workers = work(workers)
+
+    t++
+  }
+
+  fmt.Printf("\n%d", t)
 }

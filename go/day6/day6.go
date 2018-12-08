@@ -59,97 +59,94 @@ func maxCoord(ps []Point) (int, int) {
 	return maxX, maxY
 }
 
-func plot(coords []Point, x int, y int) {
-	count := 1
-	maxX := 0
-	maxY := 0
-	p := map[int]map[int]string{}
-	for _, point := range coords {
-		if p[point.Y] == nil {
-			p[point.Y] = map[int]string{}
-		}
-		p[point.Y][point.X] = strconv.Itoa(count)
-		maxX = max(maxX, point.X)
-		maxY = max(maxY, point.Y)
-		count++
-	}
+func plot(freq map[int]map[int]Point, x, y int) {
 	for row := 0; row <= y; row++ {
 		for col := 0; col <= x; col++ {
-			point := p[row][col]
-			if len(point) > 0 {
-				fmt.Printf(point)
-			} else {
+			id := freq[row][col].ID
+			if id == -1 {
 				fmt.Printf(".")
-			}
-		}
-		fmt.Printf("\n")
-	}
-}
-
-func removeInfinite(ps []Point) []Point {
-	points := []Point{}
-	for _, p := range ps {
-		t := false
-		r := false
-		b := false
-		l := false
-		for _, k := range ps {
-			r = r || p.X < k.X
-			l = l || p.X > k.X
-			b = b || p.Y < k.Y
-			t = t || p.Y > k.Y
-		}
-		if r && l && b && t {
-			points = append(points, p)
-		}
-	}
-	return points
-}
-
-func scorePoints(ps []Point, x int, y int) map[int]int {
-	// fmt.Printf("%d, %d", x, y)
-	score := map[int]int{}
-	// fmt.Printf("\n")
-	for row := 0; row < y+1; row++ {
-		for col := 0; col <= x+1; col++ {
-			tmp := ps[0]
-			minDiff := max(x, y)
-			for _, p := range ps {
-				diff := taxiDiff(Point{X: col, Y: row}, p)
-				if diff < minDiff {
-					minDiff = diff
-					tmp = p
-				} else if diff == minDiff {
-					tmp = Point{}
-				}
-			}
-			if tmp.ID > 0 {
-				fmt.Print(tmp.ID)
-				score[tmp.ID] = score[tmp.ID] + 1
 			} else {
-				fmt.Print(".")
+				fmt.Printf("%d", freq[row][col].ID)
 			}
 		}
 		fmt.Printf("\n")
 	}
-	// fmt.Printf("\n")
-	// fmt.Println(score)
+}
+
+func score(freq map[int]map[int]Point, ps []Point, x, y int) map[int]int {
+	score := map[int]int{}
+	for row := 0; row <= y; row++ {
+		for col := 0; col <= x; col++ {
+			point := freq[row][col]
+			if isFinite(ps, point) && point.ID != -1 {
+				score[freq[row][col].ID] = max(score[freq[row][col].ID]+1, 0)
+			}
+		}
+	}
 	return score
+}
+
+func closestPoint(ps []Point, x, y int) Point {
+	var minPoint Point
+	curPoint := Point{x, y, -1}
+	minDiff := -1
+
+	for _, p := range ps {
+		diff := taxiDiff(curPoint, p)
+		if minDiff == -1 || diff < minDiff {
+			minDiff = diff
+			minPoint = p
+		} else if minDiff == diff {
+			minDiff = diff
+			minPoint = curPoint
+		}
+	}
+	return minPoint
+}
+
+func countFreq(ps []Point, x, y int) map[int]map[int]Point {
+	score := make(map[int]map[int]Point)
+	for row := 0; row <= y; row++ {
+		if score[row] == nil {
+			score[row] = make(map[int]Point)
+		}
+		for col := 0; col <= x+1; col++ {
+			cp := closestPoint(ps, col, row)
+			score[row][col] = cp
+		}
+	}
+
+	return score
+}
+
+func isFinite(ps []Point, p Point) bool {
+	var tr, tl, br, bl bool
+	for _, k := range ps {
+		tr = tr || k.X > p.X && k.Y < p.Y
+		tl = tl || k.X < p.X && k.Y < p.Y
+		br = br || k.X > p.X && k.Y > p.Y
+		bl = bl || k.X < p.X && k.Y > p.Y
+	}
+	if tr && tl && br && bl {
+		return true
+	}
+	return false
+}
+
+func maxScore(score map[int]int) int {
+	mx := 0
+	for _, val := range score {
+		mx = max(val, mx)
+	}
+	return mx
 }
 
 // Solve - Puzzle for day 6
 func Solve() {
-	coords := parseCoords("./day6/test")
+	coords := parseCoords("./day6/coords")
 	x, y := maxCoord(coords)
-	fmt.Println(coords)
-	plot(coords, x, y)
-	fmt.Printf("\n")
-	score := scorePoints(coords, x, y)
-	cs := removeInfinite(coords)
-
-	mx := 0
-	for _, p := range cs {
-		mx = max(score[p.ID], mx)
-		fmt.Printf("%d: %d\n", p.ID, score[p.ID])
-	}
+	freq := countFreq(coords, x, y)
+	s := score(freq, coords, x, y)
+	max := maxScore(s)
+	fmt.Print("Part 1: ", max)
 }

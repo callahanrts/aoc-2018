@@ -95,75 +95,90 @@ func stepOrder(prereq map[string][]string) []string {
 			}
 		}
 	}
-  fmt.Printf("\n")
-  return has
+	fmt.Printf("\n")
+	return has
 }
 
-func available(step string, done[]string, prereq map[string][]string) bool {
-  avail := true
-  for _, dep := range prereq[step] {
-    avail = avail && !stringInSlice(dep, done)
-  }
-  return avail
+func available(step string, done []string, prereq map[string][]string) bool {
+	avail := true
+	for _, dep := range prereq[step] {
+		avail = avail && stringInSlice(dep, done)
+	}
+	return avail
 }
 
-func stepTime (step string) int {
-  return int([]rune(step)[0]) - 64
+func stepTime(step string) int {
+	return int([]rune(step)[0]) - 64
 }
 
-func consume (workers [2][]string, step string) ([2][]string, bool) {
-  // For each worker
-  for w := 0; w < 2; w++ {
-    if len(workers[w]) == 0 {
-      for j := 0; j < stepTime(step); j++ {
-        workers[w] = append(workers[w], step)
-        return workers, true
-      }
-    }
-  }
+func consume(workers [2][]string, step string) ([2][]string, bool) {
+	// For each worker
+	for w := 0; w < 2; w++ {
+		if len(workers[w]) == 0 {
+			for j := 0; j < stepTime(step); j++ {
+				workers[w] = append(workers[w], step)
+			}
+			return workers, true
+		}
+	}
 
-  return workers, false
+	return workers, false
 }
 
-func work (workers [2][]string) [2][]string {
-  for w := 0; w < 2; w++ {
-    if len(workers[w]) > 0 {
-      workers[w] = workers[w][1:]
-    }
-  }
+func work(workers [2][]string) [2][]string {
+	for w := 0; w < 2; w++ {
+		if len(workers[w]) > 0 {
+			workers[w] = workers[w][1:]
+		}
+	}
 
-  return workers
+	return workers
 }
-
 
 // Solve - solve it
 func Solve() {
-	_, prereq := parseSteps("./day7/test")
-  steps := stepOrder(prereq)
-  done := []string{}
+	_, prereq := parseSteps("./day7/steps")
+	fmt.Print(prereq)
 
-  workers := [2][]string{}
+	has := []string{}
 
-  t := 0
-  for len(steps) > 0 {
-    // If the next step is available
-    if available(steps[0], done, prereq) {
+	workingOn := []string{"", "", "", "", ""} // Make this 5
+	timeLeft := []int{0, 0, 0, 0, 0}          // make this 5
 
-      // Consume the next task if possible
-      var consumed bool
-      workers, consumed = consume(workers, steps[0])
-      if consumed {
-        fmt.Print(consumed)
-        done = append(done, steps[0])
-        steps = steps[1:]
-      }
+	S := []string{}
+	for i := 1; i <= 26; i++ {
+		S = append(S, string(toChar(i)))
+	}
 
-    }
+	for i := 0; i < 100000; i++ {
+		for j := 0; j < 5; j++ {
+			if len(workingOn[j]) > 0 {
+				timeLeft[j]--
+				if timeLeft[j] == 0 {
+					has = append(has, workingOn[j])
+					workingOn[j] = ""
+				}
+			}
+		}
 
-    workers = work(workers)
+		if equal(S, has) {
+			print(i)
+			break
+		}
 
-    t++
-  }
+		for j := 0; j < 5; j++ {
+			if len(workingOn[j]) > 0 {
+				continue
+			}
 
-  fmt.Printf("\n%d", t)
+			for _, k := range S {
+				if !stringInSlice(k, has) && !stringInSlice(k, workingOn) && equal(intersection(prereq[k], has), prereq[k]) {
+					workingOn[j] = k
+					timeLeft[j] = 60 + stepTime(k)
+					break
+				}
+			}
+		}
+	}
+
 }

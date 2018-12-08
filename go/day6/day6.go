@@ -106,7 +106,7 @@ func closestPoint(ps []Point, x, y int) Point {
 
 func countFreq(ps []Point, x, y int) map[int]map[int]Point {
 	score := make(map[int]map[int]Point)
-	for row := 0; row <= y; row++ {
+	for row := 0; row <= y+1; row++ {
 		if score[row] == nil {
 			score[row] = make(map[int]Point)
 		}
@@ -116,6 +116,28 @@ func countFreq(ps []Point, x, y int) map[int]map[int]Point {
 		}
 	}
 
+	return score
+}
+
+func findArea(ps []Point, x, y int) map[int]map[int]int {
+	score := make(map[int]map[int]int)
+	for row := 0; row <= y+1; row++ {
+		if score[row] == nil {
+			score[row] = make(map[int]int)
+		}
+		for col := 0; col <= x+1; col++ {
+			sum := 0
+			for _, p := range ps {
+				sum += taxiDiff(p, Point{col, row, -1})
+			}
+			// Don't care about sums > 16
+			if sum > 10000 {
+				score[row][col] = 0
+			} else {
+				score[row][col] = 1
+			}
+		}
+	}
 	return score
 }
 
@@ -141,6 +163,18 @@ func maxScore(score map[int]int) int {
 	return mx
 }
 
+func countSize(score map[int]map[int]int, x, y int) int {
+	size := 0
+	// Lazily assume there's only one spot. We'd need to find the max or
+	// something if there are more than one spot
+	for row := 0; row < y; row++ {
+		for col := 0; col < x; col++ {
+			size += score[row][col]
+		}
+	}
+	return size
+}
+
 // Solve - Puzzle for day 6
 func Solve() {
 	coords := parseCoords("./day6/coords")
@@ -148,5 +182,9 @@ func Solve() {
 	freq := countFreq(coords, x, y)
 	s := score(freq, coords, x, y)
 	max := maxScore(s)
-	fmt.Print("Part 1: ", max)
+	fmt.Printf("\nPart 1: %d\n", max)
+
+	mp := findArea(coords, x, y)
+	size := countSize(mp, x, y)
+	fmt.Printf("Part 2: %d", size)
 }

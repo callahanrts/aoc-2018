@@ -1,9 +1,9 @@
 package main
 
 import (
-	"./day8"
+	"./day9"
 )
 
 func main() {
-	day8.Solve()
+	day9.Solve()
 }

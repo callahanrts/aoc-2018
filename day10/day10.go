@@ -27,10 +27,10 @@ func move(vs []vector) []vector {
 }
 
 func gridSize(vs []vector) (int, int, int, int) {
-	maxX := 0
-	maxY := 0
-	minX := 0
-	minY := 0
+	maxX := vs[0].X
+	maxY := vs[0].Y
+	minX := vs[0].X
+	minY := vs[0].Y
 	for _, v := range vs {
 		if maxX < v.X {
 			maxX = v.X
@@ -49,7 +49,6 @@ func gridSize(vs []vector) (int, int, int, int) {
 }
 
 func printVectors(vs []vector) {
-	out := ""
 	mp := map[int]map[int]string{}
 	minx, maxx, miny, maxy := gridSize(vs)
 	for _, v := range vs {
@@ -62,21 +61,13 @@ func printVectors(vs []vector) {
 	for row := miny; row <= maxy; row++ {
 		for col := minx; col <= maxx; col++ {
 			if len(mp[col][row]) > 0 {
-				out += mp[col][row]
+				fmt.Print(mp[col][row])
 			} else {
-				if row == 0 {
-					out += "-"
-				} else if col == 0 {
-					out += "|"
-				} else {
-					out += "."
-				}
+				fmt.Print(" ")
 			}
 		}
-		out += "\n"
+		fmt.Print("\n")
 	}
-	fmt.Printf("(%d %d) - (%d, %d)", minx, miny, maxx, maxy)
-	ioutil.WriteFile("./day10/out", []byte(out), 0644)
 }
 
 // position=< 9,  1> velocity=< 0,  2>
@@ -126,5 +117,5 @@ func Solve() {
 		count++
 	}
 	printVectors(vs)
-	fmt.Print(count)
+	fmt.Printf("\nTook %ds", count)
 }
